@@ -1,1 +1,21 @@
-
+# =========================
+# CloudyPM — requirements.txt
+# Maintainer: ธีร์ตภัฏฐ์ มะกรูดอินทร์ (6709616558)
+# =========================
+ 
+# LINE Messaging API SDK
+line-bot-sdk==3.11.0
+ 
+# HTTP Requests
+requests==2.31.0
+ 
+# AWS SDK (Lambda runtime มีให้แล้ว แต่ใส่ไว้สำหรับ local dev)
+boto3==1.34.0
+ 
+# Environment variable management (local dev)
+python-dotenv==1.0.0
+ 
+# Data handling
+pandas==2.2.0          # สำหรับ SageMaker data prep (planned)
+numpy==1.26.4
+ 
