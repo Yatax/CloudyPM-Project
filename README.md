@@ -51,9 +51,9 @@ User → LINE Bot → Amazon API Gateway → AWS Lambda
 - **UI/UX** — Custom Flex Message เปลี่ยนรูปภาพพื้นหลัง + สีตามระดับความรุนแรง (Good / Moderate / Unhealthy / Hazardous)
 - **Location-based Service** — รับพิกัดผู้ใช้เพื่อหาค่าฝุ่นเฉพาะจุด
 - **Text-based Command** — ปุ่ม "เช็กฝุ่น" และ "วิธีป้องกันตัว" ผ่าน Rich Menu
+- **DynamoDB** — เก็บประวัติการเช็กฝุ่น + ระบบสะสมแต้ม "Campus Hero" สำหรับนักศึกษาที่ช่วยรายงานค่าฝุ่น
 ### 🔜 Next Plan
  
-- **DynamoDB** — เก็บประวัติการเช็กฝุ่น + ระบบสะสมแต้ม "Campus Hero" สำหรับนักศึกษาที่ช่วยรายงานค่าฝุ่น
 - **Push Notification** — แจ้งเตือนอัตโนมัติเมื่อค่าฝุ่นในพิกัดที่สนใจถึงระดับอันตราย
 ---
  
