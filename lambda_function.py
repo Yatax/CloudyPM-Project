@@ -1,7 +1,12 @@
 import json
 import urllib.request
+import boto3
+from datetime import datetime
 
-# --- ฟังก์ชันหลักที่ AWS Lambda จะเรียกใช้ ---
+# --- เตรียมการเชื่อมต่อ DynamoDB ไว้นอก Handler เพื่อความเร็ว ---
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('CloudyPM_History')
+
 def lambda_handler(event, context):
     try:
         body = json.loads(event.get('body', '{}'))
@@ -19,21 +24,31 @@ def lambda_handler(event, context):
             lon = message['longitude']
             address = message.get('address', 'ตำแหน่งของคุณ')
             
-            # --- เปลี่ยนมาใช้ AQICN API ตรงนี้ค่ะ ---
             token = "3a4dcec3b23620f3249f5ead9282334ab304a91b"
             api_url = f"https://api.waqi.info/feed/geo:{lat};{lon}/?token={token}"
 
             with urllib.request.urlopen(api_url) as response:
                 data = json.loads(response.read().decode())
                 if data['status'] == 'ok':
-                    # ดึงค่า PM 2.5 (ถ้าไม่มีข้อมูลให้เป็น 0)
                     pm_value = data['data']['iaqi'].get('pm25', {}).get('v', 0)
-                    # ดึงชื่อสถานีตรวจวัดมาต่อท้ายที่อยู่เพื่อความแม่นยำ
                     station = data['data']['city']['name']
                     address = f"{address} (สถานี: {station})"
                 else:
                     pm_value = 0
-            # -----------------------------------
+            
+            # --- ✅ จุดที่ต้องย้ายมาวาง: บันทึกลง DynamoDB ตรงนี้ค่ะ ---
+            try:
+                table.put_item(
+                    Item={
+                        'userId': line_event['source'].get('userId', 'anonymous'),
+                        'timestamp': str(datetime.now()),
+                        'pm_value': pm_value,
+                        'location': address
+                    }
+                )
+            except Exception as db_e:
+                print(f"DynamoDB Error: {db_e}")
+            # -----------------------------------------------------
             
             return process_and_reply(reply_token, pm_value, address)
 
@@ -43,7 +58,6 @@ def lambda_handler(event, context):
             if "เช็กค่าฝุ่น" in user_text or "เช็คค่าฝุ่น" in user_text:
                 instruction = [{"type": "text", "text": "📍 กรุณาส่งตำแหน่งที่ตั้ง (Location) มาให้หนูหน่อยนะคะ โดยกดปุ่ม + แล้วเลือก 'ตำแหน่งที่ตั้ง' ค่ะ"}]
                 return send_reply(reply_token, instruction)
-            # --- ปุ่มวิธีป้องกันตัว (ที่เพิ่มใหม่) ---
             elif "วิธีป้องกันตัว" in user_text:
                 tips = [
                     {
@@ -57,8 +71,9 @@ def lambda_handler(event, context):
         print(f"Error occurred: {e}")
     return {'statusCode': 200, 'body': 'ok'}
 
+# --- ฟังก์ชันช่วยเหลืออื่นๆ (เหมือนเดิม) ---
 def process_and_reply(reply_token, pm_value, address):
-    # เลือกรูปภาพและสถานะตามเกณฑ์ AQI/PM2.5
+    # ... (โค้ดส่วนเลือกรูปและสร้าง Flex Message เหมือนเดิมของคุณ) ...
     if pm_value <= 15:
         status_text = "EXCELLENT 😊"
         image_url = "https://raw.githubusercontent.com/Yatax/CloudyPM-Project/main/assets/good.png"
@@ -191,9 +206,7 @@ def send_reply(reply_token, messages):
         'messages': messages
     }
     
-    # ป้องกัน Error ภาษาไทยด้วย ensure_ascii=False และการ encode
     json_data = json.dumps(data, ensure_ascii=False).encode('utf-8')
-    
     req = urllib.request.Request(url, data=json_data, headers=headers)
     try:
         with urllib.request.urlopen(req) as res:
